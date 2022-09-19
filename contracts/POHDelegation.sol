@@ -106,8 +106,8 @@ contract ProofOfHumanityProxy {
      *         snapshot space or the general delegation. 
      */
     function _isDelegator(address _voterId) internal view returns (bool) {
-        return delegateRegistry[_voterId][snapshotSpace] != address(0) ||
-            delegateRegistry[_voterId][0x0] != address(0);
+        return delegateRegistry.delegation(_voterId, snapshotSpace) != address(0) ||
+            delegateRegistry.delegation(_voterId, 0x0) != address(0);
     }
 
 
@@ -117,7 +117,7 @@ contract ProofOfHumanityProxy {
      */
     function _calculateBalanceWithDecay(address _voterId) internal view returns (uint256) {
         // voting_power = (current_timestamp - final_timestamp)/(initial_timestamp-final_timestamp)
-        uint memory finalTime = initialTimeStamp + 1679151297;
+        uint finalTime = initialTimeStamp + 1679151297;
         return (block.timestamp - finalTime) / (initialTimeStamp - finalTime);
     }
 
@@ -148,11 +148,11 @@ contract ProofOfHumanityProxy {
         return PoH.submissionCounter();
     }
 
-    function transfer(address _recipient, uint256 _amount) external returns (bool) { return false; }
+    function transfer(address, uint256) external returns (bool) { return false; }
 
-    function allowance(address _owner, address _spender) external view returns (uint256) {}
+    function allowance(address, address) external view returns (uint256) {}
 
-    function approve(address _spender, uint256 _amount) external returns (bool) { return false; }
+    function approve(address, uint256) external returns (bool) { return false; }
 
-    function transferFrom(address _sender, address _recipient, uint256 _amount) external returns (bool) { return false; }
+    function transferFrom(address, address, uint256) external returns (bool) { return false; }
 }
