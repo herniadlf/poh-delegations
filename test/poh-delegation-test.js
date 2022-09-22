@@ -90,11 +90,24 @@ describe('PoH Delegation Contract', function() {
             await expect(await pohDelegation.balanceOf(userTwo.address)).to.be.eq(1);
         });
 
-        it('the delegator balance should return to 1 if renowal is called', async function() {
+    });
+
+    describe('Renewal of decayed voting power', function() {
+
+        beforeEach(async function() {
+            await pohMock.connect(userOne).addSubmission('some', 'thing');
+            await pohMock.connect(userTwo).addSubmission('some', 'thing');
             await delegationRegistry.connect(userOne).setDelegate(ethers.constants.HashZero, userTwo.address);
             await provider.send("evm_increaseTime", [decayCooldown + sixMonths]);
             await provider.send("evm_mine");
-            await expect(await pohDelegation.balanceOf(userOne.address)).to.be.eq(0);
+        });
+
+        it('the delegator balance should return to 1 if renowal is called', async function() {
+            const initialVotingPower = await pohDelegation.balanceOf(userOne.address);
+            await pohDelegation.connect(userOne).renewDelegation();
+            const renewedVotingPower = await pohDelegation.balanceOf(userOne.address);
+            await expect(initialVotingPower).to.be.eq(0);
+            await expect(renewedVotingPower).to.be.eq(1);
         });
 
     });

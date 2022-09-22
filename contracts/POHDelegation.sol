@@ -20,9 +20,10 @@ import "./interfaces/IProofOfHumanity.sol";
  */
 contract ProofOfHumanityDelegation {
     error MathOperationError();
+    error CallerIsNotADelegator(address caller);
     IProofOfHumanity public PoH;
     IDelegateRegistry public delegateRegistry;
-    uint public initialTimeStamp;
+    uint public contractInitialTimeStamp;
     bytes32 public snapshotSpace;
     address public governor = msg.sender;
     string public name = "Human Vote w decay";
@@ -30,6 +31,8 @@ contract ProofOfHumanityDelegation {
     uint8 public immutable decimals = 0;
     uint public immutable decayCooldown = 5184000; // two months
     uint public immutable totalDecayTime = 15552000; // six months
+    mapping (address => uint) public delegatorTimeStamp; // the initial timestamp for each delegator. If not defined, it will be contractInitialTimeStamp   
+    event DelegationRenewed(address indexed delegator);
 
     /** @dev Constructor.
      *  @param _PoH The address of the related ProofOfHumanity contract.
@@ -43,7 +46,7 @@ contract ProofOfHumanityDelegation {
     {
         PoH = _PoH;
         delegateRegistry = _delegateRegistry;
-        initialTimeStamp = block.timestamp;
+        contractInitialTimeStamp = block.timestamp;
         snapshotSpace = _snapshotSpace;
     }
 
@@ -96,8 +99,7 @@ contract ProofOfHumanityDelegation {
         if (!isRegistered(_voterId)) {
             return 0;
         }
-        bool hasPassDecayCooldown = block.timestamp > (initialTimeStamp + decayCooldown);
-        if (hasPassDecayCooldown && _isDelegator(_voterId)) {
+        if (_isDelegator(_voterId)) {
             return _calculateBalanceWithDecay(_voterId);
         }
         return 1;
@@ -142,15 +144,33 @@ contract ProofOfHumanityDelegation {
      * @return A value that decays from 1 to 0.
      */
     function _calculateBalanceWithDecay(address _voterId) internal view returns (uint256) {
-        uint finalTime = initialTimeStamp + totalDecayTime;
-        if (finalTime < initialTimeStamp) {
+        uint delegatorInitialTimeStamp; 
+        if (delegatorTimeStamp[_voterId] == 0) {
+            delegatorInitialTimeStamp = contractInitialTimeStamp;
+        } else {
+            delegatorInitialTimeStamp = delegatorTimeStamp[_voterId];
+        }
+        bool hasPassDecayCooldown = block.timestamp > (delegatorInitialTimeStamp + decayCooldown);
+        uint finalTime = delegatorInitialTimeStamp + totalDecayTime;
+        if (finalTime < delegatorInitialTimeStamp) {
             revert MathOperationError();
         }
-        if (initialTimeStamp > block.timestamp || initialTimeStamp > finalTime) {
+        if (delegatorInitialTimeStamp > block.timestamp || delegatorInitialTimeStamp > finalTime) {
             revert MathOperationError();
         }
-        uint dividend = block.timestamp - initialTimeStamp;
-        uint divider = finalTime - initialTimeStamp;
+        uint dividend = block.timestamp - delegatorInitialTimeStamp;
+        uint divider = finalTime - delegatorInitialTimeStamp;
         return 1 - (dividend/divider);
+    }
+
+    /**
+     * @dev Reset the initial timestamp for the delegation. 
+     */
+    function renewDelegation() external {
+        if (!_isDelegator(msg.sender)) {
+            revert CallerIsNotADelegator(msg.sender);
+        }
+        delegatorTimeStamp[msg.sender] = block.timestamp;   
+        emit DelegationRenewed(msg.sender);
     }
 }
