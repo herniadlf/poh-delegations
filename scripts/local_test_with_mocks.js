@@ -1,3 +1,7 @@
+const decayCooldown = 5184000; // two months
+const fourMonths = 10368000;
+const sixMonths = 15552000;
+
 async function main() {
     let contractFactory = await ethers.getContractFactory('DelegateRegistryMock');
     const delegationRegistry = await contractFactory.deploy();
@@ -18,6 +22,19 @@ async function main() {
     await delegationDecay.deployed();
 
     console.log('POHDelegationDecay Contract address ' + delegationDecay.address);
+
+    const accounts = await ethers.getSigners();
+    const provider = ethers.provider;
+    const userOne = accounts[1];
+    const userTwo = accounts[2];
+
+    await pohMock.connect(userOne).addSubmission('some', 'thing');
+    await pohMock.connect(userTwo).addSubmission('some', 'thing');
+    await delegationRegistry.connect(userOne).setDelegate(ethers.constants.HashZero, userTwo.address);
+    await provider.send("evm_increaseTime", [decayCooldown + sixMonths]);
+    await provider.send("evm_mine");
+
+    await delegationDecay.connect(userOne).renewDelegation();
 }
 
 main()

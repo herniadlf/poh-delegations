@@ -21,7 +21,9 @@ describe('PoH Delegation Contract', function() {
         contractFactory = await ethers.getContractFactory('POHDelegationDecay');
         pohDelegation = await contractFactory.deploy(pohMock.address, 
             delegationRegistry.address,
-            snapshotSpace);
+            snapshotSpace,
+            decayCooldown,
+            sixMonths);
         await pohDelegation.deployed();
 
         accounts = await ethers.getSigners();

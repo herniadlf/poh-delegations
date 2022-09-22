@@ -19,8 +19,11 @@ import "./interfaces/IProofOfHumanity.sol";
  *  Note that it isn't an ERC20 and only implements its interface in order to be compatible with Snapshot.
  */
 contract POHDelegationDecay {
+    /* Errors */
     error MathOperationError();
     error CallerIsNotADelegator(address caller);
+
+    /* Storage */
     IProofOfHumanity public PoH;
     IDelegateRegistry public delegateRegistry;
     uint public contractInitialTimeStamp;
@@ -29,9 +32,11 @@ contract POHDelegationDecay {
     string public name = "Human Vote w decay";
     string public symbol = "VOTEDECAY";
     uint8 public immutable decimals = 0;
-    uint public immutable decayCooldown = 5184000; // two months
-    uint public immutable totalDecayTime = 15552000; // six months
+    uint public decayCooldown; // two months
+    uint public totalDecayTime; // six months
     mapping (address => uint) public delegatorTimeStamp; // the initial timestamp for each delegator. If not defined, it will be contractInitialTimeStamp   
+    
+    /* Events */ 
     event DelegationRenewed(address indexed delegator);
 
     /** @dev Constructor.
@@ -42,12 +47,16 @@ contract POHDelegationDecay {
     constructor(
         IProofOfHumanity _PoH, 
         IDelegateRegistry _delegateRegistry,
-        bytes32 _snapshotSpace) 
+        bytes32 _snapshotSpace,
+        uint _decayCooldown,
+        uint _totalDecayTime) 
     {
         PoH = _PoH;
         delegateRegistry = _delegateRegistry;
         contractInitialTimeStamp = block.timestamp;
         snapshotSpace = _snapshotSpace;
+        decayCooldown = _decayCooldown;
+        totalDecayTime = _totalDecayTime;
     }
 
     /** @dev Changes the address of the the related ProofOfHumanity contract.
@@ -72,6 +81,22 @@ contract POHDelegationDecay {
     function changeSnapshotSpace(bytes32 _newSpace) external {
         require(msg.sender == governor, "The caller must be the governor.");
         snapshotSpace = _newSpace;
+    }
+    
+    /** @dev Changes the decay cooldown.
+     *  @param _newDecayCooldown The new decay cooldown.
+     */
+    function changeDecayCooldown(uint _newDecayCooldown) external {
+        require(msg.sender == governor, "The caller must be the governor.");
+        decayCooldown = _newDecayCooldown;
+    }
+
+    /** @dev Changes the total decay time.
+     *  @param _newTotalDecayTime The new total decay cooldown.
+     */
+    function changeTotalDecayTime(uint _newTotalDecayTime) external {
+        require(msg.sender == governor, "The caller must be the governor.");
+        totalDecayTime = _newTotalDecayTime;
     }
 
     // *********************  //
