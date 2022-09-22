@@ -18,7 +18,7 @@ describe('PoH Delegation Contract', function() {
         pohMock = await contractFactory.deploy();
         await pohMock.deployed();
         
-        contractFactory = await ethers.getContractFactory('ProofOfHumanityDelegation');
+        contractFactory = await ethers.getContractFactory('POHDelegationDecay');
         pohDelegation = await contractFactory.deploy(pohMock.address, 
             delegationRegistry.address,
             snapshotSpace);
