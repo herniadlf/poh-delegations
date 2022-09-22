@@ -177,11 +177,13 @@ contract POHDelegationDecay {
         }
         bool hasPassDecayCooldown = block.timestamp > (delegatorInitialTimeStamp + decayCooldown);
         uint finalTime = delegatorInitialTimeStamp + totalDecayTime;
-        if (finalTime < delegatorInitialTimeStamp) {
+        if (finalTime < delegatorInitialTimeStamp 
+                || delegatorInitialTimeStamp > block.timestamp
+                || delegatorInitialTimeStamp > finalTime) {
             revert MathOperationError();
         }
-        if (delegatorInitialTimeStamp > block.timestamp || delegatorInitialTimeStamp > finalTime) {
-            revert MathOperationError();
+        if (block.timestamp > finalTime) {
+            return 0;
         }
         uint dividend = block.timestamp - delegatorInitialTimeStamp;
         uint divider = finalTime - delegatorInitialTimeStamp;

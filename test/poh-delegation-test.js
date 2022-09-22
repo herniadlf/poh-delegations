@@ -92,6 +92,13 @@ describe('PoH Delegation Contract', function() {
             await expect(await pohDelegation.balanceOf(userTwo.address)).to.be.eq(1);
         });
 
+        it('the delegator balance should stay 0 if renovation not happens', async function() {
+            await delegationRegistry.connect(userOne).setDelegate(snapshotSpace, userTwo.address);
+            await provider.send("evm_increaseTime", [decayCooldown + sixMonths + sixMonths]);
+            await provider.send("evm_mine");
+            await expect(await pohDelegation.balanceOf(userOne.address)).to.be.eq(0);
+        });
+
     });
 
     describe('Renewal of decayed voting power', function() {
