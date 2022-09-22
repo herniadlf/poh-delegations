@@ -4,7 +4,7 @@ const { ethers } = require('hardhat');
 describe('PoH Delegation Contract', function() {
 
     const snapshotSpace = '0x706f682e65746800000000000000000000000000000000000000000000000000';
-    const decayCooldown = 7776000;
+    const decayCooldown = 5184000; // two months
     const fourMonths = 10368000;
     const sixMonths = 15552000;
     let contractFactory, provider, pohDelegation, delegationRegistry, pohMock, deployer, userOne, userTwo, userThree;
@@ -21,8 +21,7 @@ describe('PoH Delegation Contract', function() {
         contractFactory = await ethers.getContractFactory('ProofOfHumanityDelegation');
         pohDelegation = await contractFactory.deploy(pohMock.address, 
             delegationRegistry.address,
-            snapshotSpace,
-            decayCooldown);
+            snapshotSpace);
         await pohDelegation.deployed();
 
         accounts = await ethers.getSigners();

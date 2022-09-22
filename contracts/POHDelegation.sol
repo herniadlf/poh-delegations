@@ -24,30 +24,27 @@ contract ProofOfHumanityDelegation {
     IDelegateRegistry public delegateRegistry;
     uint public initialTimeStamp;
     bytes32 public snapshotSpace;
-    uint public decayCooldown;
     address public governor = msg.sender;
     string public name = "Human Vote w decay";
     string public symbol = "VOTEDECAY";
     uint8 public immutable decimals = 0;
-    uint public immutable totalDecayTime = 15552000;
+    uint public immutable decayCooldown = 5184000; // two months
+    uint public immutable totalDecayTime = 15552000; // six months
 
     /** @dev Constructor.
      *  @param _PoH The address of the related ProofOfHumanity contract.
      *  @param _delegateRegistry The address of the snapshot delegate registry contract.
      *  @param _snapshotSpace The specific space for snapshot voting poh.eth.
-     *  @param _decayCooldown The time that has to pass before the linear decay start.
      */
     constructor(
         IProofOfHumanity _PoH, 
         IDelegateRegistry _delegateRegistry,
-        bytes32 _snapshotSpace,
-        uint _decayCooldown) 
+        bytes32 _snapshotSpace) 
     {
         PoH = _PoH;
         delegateRegistry = _delegateRegistry;
         initialTimeStamp = block.timestamp;
         snapshotSpace = _snapshotSpace;
-        decayCooldown = _decayCooldown;
     }
 
     /** @dev Changes the address of the the related ProofOfHumanity contract.
@@ -74,14 +71,6 @@ contract ProofOfHumanityDelegation {
         snapshotSpace = _newSpace;
     }
 
-    /** @dev Changes the decay cooldown.
-     *  @param _newDecayCooldown The new cooldown
-     */
-    function changeDecayCooldown(uint _newDecayCooldown) external {
-        require(msg.sender == governor, "The caller must be the governor.");
-        decayCooldown = _newDecayCooldown;
-    }
-    
     // *********************  //
     // * Proof of Humanity * //
     // *********************  //
@@ -107,7 +96,7 @@ contract ProofOfHumanityDelegation {
         if (!isRegistered(_voterId)) {
             return 0;
         }
-        bool hasPassDecayCooldown = true;
+        bool hasPassDecayCooldown = block.timestamp > (initialTimeStamp + decayCooldown);
         if (hasPassDecayCooldown && _isDelegator(_voterId)) {
             return _calculateBalanceWithDecay(_voterId);
         }
