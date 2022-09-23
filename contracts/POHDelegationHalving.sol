@@ -29,8 +29,8 @@ contract POHDelegationHalving {
     uint public contractInitialTimeStamp;
     bytes32 public snapshotSpace;
     address public governor = msg.sender;
-    string public name = "Human Vote w decay";
-    string public symbol = "VOTEDECAY";
+    string public name = "Human Vote w halving";
+    string public symbol = "VOTEHALV";
     uint8 public immutable decimals = 2;
     uint public halvingPeriod; // The time between each halving
     mapping (address => uint) public delegatorTimeStamp; // the initial timestamp for each delegator. If not defined, it will be contractInitialTimeStamp   
