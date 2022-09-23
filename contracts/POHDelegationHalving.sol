@@ -14,11 +14,11 @@ import "./interfaces/IDelegateRegistry.sol";
 import "./interfaces/IProofOfHumanity.sol";
 
 /**
- *  @title POHDelegationDecay
+ *  @title POHDelegationHalving
  *  A proxy contract for ProofOfHumanity that implements a token interface to interact with other dapps.
  *  Note that it isn't an ERC20 and only implements its interface in order to be compatible with Snapshot.
  */
-contract POHDelegationDecay {
+contract POHDelegationHalving {
     /* Errors */
     error MathOperationError();
     error CallerIsNotADelegator(address caller);
@@ -31,9 +31,8 @@ contract POHDelegationDecay {
     address public governor = msg.sender;
     string public name = "Human Vote w decay";
     string public symbol = "VOTEDECAY";
-    uint8 public immutable decimals = 2;
-    uint public decayCooldown; // two months
-    uint public totalDecayTime; // six months
+    uint8 public immutable decimals = 0;
+    uint public halvingTimePeriod; // two months
     mapping (address => uint) public delegatorTimeStamp; // the initial timestamp for each delegator. If not defined, it will be contractInitialTimeStamp   
     
     /* Events */ 
@@ -43,20 +42,20 @@ contract POHDelegationDecay {
      *  @param _PoH The address of the related ProofOfHumanity contract.
      *  @param _delegateRegistry The address of the snapshot delegate registry contract.
      *  @param _snapshotSpace The specific space for snapshot voting poh.eth.
+     *  @param _halvingTimePeriod The halving period.
      */
     constructor(
         IProofOfHumanity _PoH, 
         IDelegateRegistry _delegateRegistry,
         bytes32 _snapshotSpace,
         uint _decayCooldown,
-        uint _totalDecayTime) 
+        uint _halvingTimePeriod) 
     {
         PoH = _PoH;
         delegateRegistry = _delegateRegistry;
         contractInitialTimeStamp = block.timestamp;
         snapshotSpace = _snapshotSpace;
-        decayCooldown = _decayCooldown;
-        totalDecayTime = _totalDecayTime;
+        halvingTimePeriod = halvingTimePeriod;
     }
 
     /** @dev Changes the address of the the related ProofOfHumanity contract.
@@ -84,19 +83,11 @@ contract POHDelegationDecay {
     }
     
     /** @dev Changes the decay cooldown.
-     *  @param _newDecayCooldown The new decay cooldown.
+     *  @param _newHalvingTimePeriod The new halving time period.
      */
-    function changeDecayCooldown(uint _newDecayCooldown) external {
+    function changeHalvingTimePeriod(uint _newHalvingTimePeriod) external {
         require(msg.sender == governor, "The caller must be the governor.");
-        decayCooldown = _newDecayCooldown;
-    }
-
-    /** @dev Changes the total decay time.
-     *  @param _newTotalDecayTime The new total decay cooldown.
-     */
-    function changeTotalDecayTime(uint _newTotalDecayTime) external {
-        require(msg.sender == governor, "The caller must be the governor.");
-        totalDecayTime = _newTotalDecayTime;
+        halvingTimePeriod = _newHalvingTimePeriod;
     }
 
     // *********************  //
@@ -127,7 +118,7 @@ contract POHDelegationDecay {
         if (_isDelegator(_voterId)) {
             return _calculateBalanceWithDecay(_voterId);
         }
-        return 100;
+        return 1;
     }
 
     /** @dev Returns the count of all submissions that made a registration request at some point, including those that were added manually.
@@ -169,32 +160,14 @@ contract POHDelegationDecay {
      * @return A value that decays from 1 to 0.
      */
     function _calculateBalanceWithDecay(address _voterId) internal view returns (uint256) {
-        uint initialTime; 
+        uint delegatorInitialTimeStamp; 
         if (delegatorTimeStamp[_voterId] == 0) {
-            initialTime = contractInitialTimeStamp;
+            delegatorInitialTimeStamp = contractInitialTimeStamp;
         } else {
-            initialTime = delegatorTimeStamp[_voterId];
+            delegatorInitialTimeStamp = delegatorTimeStamp[_voterId];
         }
-        uint initialTimeWithCooldownOffset = initialTime + decayCooldown;
-        if (initialTimeWithCooldownOffset < initialTime) {
-            revert MathOperationError();
-        }
-        // cooldown has not passed
-        if (block.timestamp <= initialTimeWithCooldownOffset) {
-            return 100;
-        }
-        uint finalTime = initialTimeWithCooldownOffset + totalDecayTime;
-        if (finalTime < initialTimeWithCooldownOffset 
-                || initialTimeWithCooldownOffset > block.timestamp
-                || initialTimeWithCooldownOffset > finalTime) {
-            revert MathOperationError();
-        }
-        if (block.timestamp > finalTime) {
-            return 0;
-        }
-        uint dividend = 100 * (block.timestamp - initialTimeWithCooldownOffset);
-        uint divider = finalTime - initialTimeWithCooldownOffset;
-        return 100 - (dividend/divider);
+        uint totalHalvingPeriods = block.timestamp / halvingTimePeriod;
+        return 1 / totalHalvingPeriods;
     }
 
     /**
