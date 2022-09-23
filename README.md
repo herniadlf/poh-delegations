@@ -1,6 +1,6 @@
 # Proof of Humanity voting delegations
 
-Some research about an ERC-20 implementations to handle some votation strategies for Proof Of Humanity DAO.
+Some research about an ERC-20 implementations to handle some delegation strategies for Proof Of Humanity DAO.
 
 ## POHDelegationDecay.sol
 
