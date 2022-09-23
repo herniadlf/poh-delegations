@@ -133,6 +133,16 @@ describe('PoH Delegation Decay Contract', function() {
             await expect(renewedVotingPower).to.be.eq(100);
         });
 
+        it('the delegator balance should return to decay after renowal is called', async function() {
+            await pohDelegation.connect(userOne).renewDelegation();
+            const afterRenewalPower = await pohDelegation.balanceOf(userOne.address);
+            await provider.send("evm_increaseTime", [8 * oneMonth]);
+            await provider.send("evm_mine");
+            const afterSecondDecay = await pohDelegation.balanceOf(userOne.address);
+            await expect(afterRenewalPower).to.be.eq(100);
+            await expect(afterSecondDecay).to.be.eq(0);
+        });
+
     });
 
 });
