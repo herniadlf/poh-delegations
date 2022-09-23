@@ -31,8 +31,8 @@ contract POHDelegationHalving {
     address public governor = msg.sender;
     string public name = "Human Vote w decay";
     string public symbol = "VOTEDECAY";
-    uint8 public immutable decimals = 0;
-    uint public halvingTimePeriod; // two months
+    uint8 public immutable decimals = 2;
+    uint public halvingPeriod; // The time between each halving
     mapping (address => uint) public delegatorTimeStamp; // the initial timestamp for each delegator. If not defined, it will be contractInitialTimeStamp   
     
     /* Events */ 
@@ -42,20 +42,19 @@ contract POHDelegationHalving {
      *  @param _PoH The address of the related ProofOfHumanity contract.
      *  @param _delegateRegistry The address of the snapshot delegate registry contract.
      *  @param _snapshotSpace The specific space for snapshot voting poh.eth.
-     *  @param _halvingTimePeriod The halving period.
+     *  @param _halvingPeriod The time between each halving
      */
     constructor(
         IProofOfHumanity _PoH, 
         IDelegateRegistry _delegateRegistry,
         bytes32 _snapshotSpace,
-        uint _decayCooldown,
-        uint _halvingTimePeriod) 
+        uint _halvingPeriod) 
     {
         PoH = _PoH;
         delegateRegistry = _delegateRegistry;
         contractInitialTimeStamp = block.timestamp;
         snapshotSpace = _snapshotSpace;
-        halvingTimePeriod = halvingTimePeriod;
+        halvingPeriod = _halvingPeriod;
     }
 
     /** @dev Changes the address of the the related ProofOfHumanity contract.
@@ -82,12 +81,12 @@ contract POHDelegationHalving {
         snapshotSpace = _newSpace;
     }
     
-    /** @dev Changes the decay cooldown.
-     *  @param _newHalvingTimePeriod The new halving time period.
+    /** @dev Changes the halving period.
+     *  @param _newHalvingPeriod The new halving period.
      */
-    function changeHalvingTimePeriod(uint _newHalvingTimePeriod) external {
+    function changeHalvingPeriod(uint _newHalvingPeriod) external {
         require(msg.sender == governor, "The caller must be the governor.");
-        halvingTimePeriod = _newHalvingTimePeriod;
+        halvingPeriod = _newHalvingPeriod;
     }
 
     // *********************  //
@@ -116,9 +115,9 @@ contract POHDelegationHalving {
             return 0;
         }
         if (_isDelegator(_voterId)) {
-            return _calculateBalanceWithDecay(_voterId);
+            return _calculateBalanceWithHalving(_voterId);
         }
-        return 1;
+        return 100;
     }
 
     /** @dev Returns the count of all submissions that made a registration request at some point, including those that were added manually.
@@ -154,20 +153,27 @@ contract POHDelegationHalving {
     }
 
 
-    /** @dev Calculates a lineal decay since the initial timestamp delegation to the final timestamp, which it will has 0 value.
-     * The voting power will be voting_power = 1 - (current_timestamp - initial_timestamp)/(final_timestamp - initial_timestamp)
+    /** @dev Calculates the voting power applying halving since the initial timestamp delegation to the final timestamp.
+     * The voting power will be voting_power = 1 / 2^{halving_count}
      * @param _voterId The address of the voter
-     * @return A value that decays from 1 to 0.
+     * @return A value between 1 to 0 with 2 decimals.
      */
-    function _calculateBalanceWithDecay(address _voterId) internal view returns (uint256) {
-        uint delegatorInitialTimeStamp; 
+    function _calculateBalanceWithHalving(address _voterId) internal view returns (uint256) {
+        uint initialTime; 
         if (delegatorTimeStamp[_voterId] == 0) {
-            delegatorInitialTimeStamp = contractInitialTimeStamp;
+            initialTime = contractInitialTimeStamp;
         } else {
-            delegatorInitialTimeStamp = delegatorTimeStamp[_voterId];
+            initialTime = delegatorTimeStamp[_voterId];
         }
-        uint totalHalvingPeriods = block.timestamp / halvingTimePeriod;
-        return 1 / totalHalvingPeriods;
+        if (initialTime > block.timestamp) {
+            revert MathOperationError();
+        }
+        uint timePassed = block.timestamp - initialTime;
+        uint halvingCount = timePassed/halvingPeriod;
+        if (halvingCount < 7) { // to avoid overflow issues during time.
+            return 100 / (2**halvingCount);
+        }
+        return 0;
     }
 
     /**

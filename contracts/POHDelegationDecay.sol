@@ -163,10 +163,10 @@ contract POHDelegationDecay {
     }
 
 
-    /** @dev Calculates a lineal decay since the initial timestamp delegation to the final timestamp, which it will has 0 value.
+    /** @dev Calculates a lineal decay since the initial timestamp delegation to the final timestamp.
      * The voting power will be voting_power = 1 - (current_timestamp - initial_timestamp)/(final_timestamp - initial_timestamp)
      * @param _voterId The address of the voter
-     * @return A value that decays from 1 to 0.
+     * @return A value between 1 to 0 with 2 decimals.
      */
     function _calculateBalanceWithDecay(address _voterId) internal view returns (uint256) {
         uint initialTime; 

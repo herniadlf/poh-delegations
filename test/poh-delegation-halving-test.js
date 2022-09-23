@@ -1,7 +1,7 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
 
-describe('PoH Delegation Contract', function() {
+describe('PoH Delegation Halving Contract', function() {
 
     const snapshotSpace = '0x706f682e65746800000000000000000000000000000000000000000000000000';
     const oneMonth = 2592000;
@@ -16,12 +16,11 @@ describe('PoH Delegation Contract', function() {
         pohMock = await contractFactory.deploy();
         await pohMock.deployed();
         
-        contractFactory = await ethers.getContractFactory('POHDelegationDecay');
+        contractFactory = await ethers.getContractFactory('POHDelegationHalving');
         pohDelegation = await contractFactory.deploy(pohMock.address, 
             delegationRegistry.address,
             snapshotSpace,
-            2 * oneMonth,
-            4 * oneMonth);
+            2 * oneMonth);
         await pohDelegation.deployed();
 
         accounts = await ethers.getSigners();
@@ -74,43 +73,40 @@ describe('PoH Delegation Contract', function() {
             await expect(await pohDelegation.balanceOf(userTwo.address)).to.be.eq(100);
         });
 
-        it('the delegator balance should decay to 0 without renovation for default snapshot space', async function() {
+        it('the delegator balance should decay to 0.5 after one halving for default snapshot space', async function() {
+            await delegationRegistry.connect(userOne).setDelegate(ethers.constants.HashZero, userTwo.address);
+            await provider.send("evm_increaseTime", [2 * oneMonth]);
+            await provider.send("evm_mine");
+            await expect(await pohDelegation.balanceOf(userOne.address)).to.be.eq(50);
+            await expect(await pohDelegation.balanceOf(userTwo.address)).to.be.eq(100);
+        });
+
+        it('the delegator balance should decay to 0.25 after two halving for default snapshot space', async function() {
+            await delegationRegistry.connect(userOne).setDelegate(ethers.constants.HashZero, userTwo.address);
+            await provider.send("evm_increaseTime", [4 * oneMonth]);
+            await provider.send("evm_mine");
+            await expect(await pohDelegation.balanceOf(userOne.address)).to.be.eq(25);
+        });
+
+        it('the delegator balance should decay to 0.12 after three halving for default snapshot space', async function() {
+            await delegationRegistry.connect(userOne).setDelegate(ethers.constants.HashZero, userTwo.address);
+            await provider.send("evm_increaseTime", [6 * oneMonth]);
+            await provider.send("evm_mine");
+            await expect(await pohDelegation.balanceOf(userOne.address)).to.be.eq(12);
+        });
+
+        it('the delegator balance should decay to 0.06 after four halving for default snapshot space', async function() {
             await delegationRegistry.connect(userOne).setDelegate(ethers.constants.HashZero, userTwo.address);
             await provider.send("evm_increaseTime", [8 * oneMonth]);
             await provider.send("evm_mine");
-            await expect(await pohDelegation.balanceOf(userOne.address)).to.be.eq(0);
-            await expect(await pohDelegation.balanceOf(userTwo.address)).to.be.eq(100);
+            await expect(await pohDelegation.balanceOf(userOne.address)).to.be.eq(6);
         });
 
-        it('the delegator balance should decay to 0 without renovation for poh snapshot space', async function() {
+        it('the delegator balance should decay to 0.06 after four halving for poh snapshot space', async function() {
             await delegationRegistry.connect(userOne).setDelegate(snapshotSpace, userTwo.address);
             await provider.send("evm_increaseTime", [8 * oneMonth]);
             await provider.send("evm_mine");
-            await expect(await pohDelegation.balanceOf(userOne.address)).to.be.eq(0);
-            await expect(await pohDelegation.balanceOf(userTwo.address)).to.be.eq(100);
-        });
-
-        it('the delegator balance should linear decay without renovation for poh snapshot space', async function() {
-            await delegationRegistry.connect(userOne).setDelegate(snapshotSpace, userTwo.address);
-            await provider.send("evm_increaseTime", [3 * oneMonth]);
-            await provider.send("evm_mine");
-            await expect(await pohDelegation.balanceOf(userOne.address)).to.be.eq(75);
-            await provider.send("evm_increaseTime", [oneMonth]);
-            await provider.send("evm_mine");
-            await expect(await pohDelegation.balanceOf(userOne.address)).to.be.eq(50);
-            await provider.send("evm_increaseTime", [oneMonth]);
-            await provider.send("evm_mine");
-            await expect(await pohDelegation.balanceOf(userOne.address)).to.be.eq(25);
-            await provider.send("evm_increaseTime", [oneMonth]);
-            await provider.send("evm_mine");
-            await expect(await pohDelegation.balanceOf(userOne.address)).to.be.eq(0);
-        });
-
-        it('the delegator balance should stay 0 if renovation not happens', async function() {
-            await delegationRegistry.connect(userOne).setDelegate(snapshotSpace, userTwo.address);
-            await provider.send("evm_increaseTime", [10 * oneMonth]);
-            await provider.send("evm_mine");
-            await expect(await pohDelegation.balanceOf(userOne.address)).to.be.eq(0);
+            await expect(await pohDelegation.balanceOf(userOne.address)).to.be.eq(6);
         });
 
     });
@@ -121,7 +117,7 @@ describe('PoH Delegation Contract', function() {
             await pohMock.connect(userOne).addSubmission('some', 'thing');
             await pohMock.connect(userTwo).addSubmission('some', 'thing');
             await delegationRegistry.connect(userOne).setDelegate(ethers.constants.HashZero, userTwo.address);
-            await provider.send("evm_increaseTime", [8 * oneMonth]);
+            await provider.send("evm_increaseTime", [24 * oneMonth]);
             await provider.send("evm_mine");
         });
 
