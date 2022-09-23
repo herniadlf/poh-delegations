@@ -28,7 +28,7 @@ contract POHDelegationHalving {
     IDelegateRegistry public delegateRegistry;
     uint public contractInitialTimeStamp;
     bytes32 public snapshotSpace;
-    address public governor = msg.sender;
+    address public governor;
     string public name = "Human Vote w halving";
     string public symbol = "VOTEHALV";
     uint8 public immutable decimals = 2;
@@ -53,6 +53,7 @@ contract POHDelegationHalving {
         PoH = _PoH;
         delegateRegistry = _delegateRegistry;
         contractInitialTimeStamp = block.timestamp;
+        governor = msg.sender;
         snapshotSpace = _snapshotSpace;
         halvingPeriod = _halvingPeriod;
     }
@@ -64,6 +65,15 @@ contract POHDelegationHalving {
         require(msg.sender == governor, "The caller must be the governor.");
         PoH = _PoH;
     }
+
+     /** @dev Changes the address of the the related DelegateRegistry contract.
+     *  @param _newDelegateRegistry The address of the new contract.
+     */
+    function changeDelegateRegistry(IDelegateRegistry _newDelegateRegistry) external {
+        require(msg.sender == governor, "The caller must be the governor.");
+        delegateRegistry = _newDelegateRegistry;
+    }
+    
     
     /** @dev Changes the address of the the governor.
      *  @param _governor The address of the new governor.
