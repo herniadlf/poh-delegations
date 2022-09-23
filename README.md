@@ -21,3 +21,22 @@ I deploy the contract on "January 1st" with decayCooldown of two months and tota
 
 If a delegator wants to recover his delegation voting power, a renewal needs to be invoked with `renewDelegation` method. It will reset the initialTimeStamp for that specific delegation.
 
+## POHDelegationHalving.sol
+
+It checks if an address has a delegation in snapshot to calculate the balance between 0 to 1. Important attributes:
+
+- `halvingPeriod` is the time between each halving. After each, the voting power is reduce to it's half.
+- `contractInitialTimeStamp` is the starting line for every delegation. From the moment the contract is deployed, we set this attribute with the current block timestamp.
+
+Examples:
+
+I deploy the contract on "January 1st" with halvingPeriod of two months. contractInitialTimeStamp will be set to "January 1st". 
+
+- 1 month after deploy: the delegation voting power will be 1.
+- 2 months after deploy: the delegation voting power will be 0.5
+- 4 months after deploy: the delegation voting power will be 0.25.
+- 6 months after deploy: the delegation voting power will be 0.12.
+- And so on..
+
+If a delegator wants to recover his delegation voting power, a renewal needs to be invoked with `renewDelegation` method. It will reset the initialTimeStamp for that specific delegation, and the voting power is restored as 1.
+
